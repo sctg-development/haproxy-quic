@@ -45,7 +45,7 @@ jobs:
     - name: Extract .deb file
       run: |
         docker pull eltorio/haproxy:2.9-${{ steps.prep.outputs.tag }}
-        docker run --rm --entrypoint cat eltorio/haproxy:2.9-${{ steps.prep.outputs.tag }} /haproxy.deb > haproxy-${{ steps.prep.outputs.tag }}.deb
+        docker run --rm --platform ${{ matrix.platform }} --entrypoint cat eltorio/haproxy:2.9-${{ steps.prep.outputs.tag }} /haproxy.deb > haproxy-${{ steps.prep.outputs.tag }}.deb
 
     - name: Upload .deb file
       uses: actions/upload-artifact@v4
