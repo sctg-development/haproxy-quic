@@ -3,6 +3,7 @@ name: Build Haproxy 2.9 with Docker Buildx
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,6 +22,12 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
     - name: Build Docker image
       uses: docker/build-push-action@v3
       with:
@@ -35,7 +42,7 @@ jobs:
         docker run --rm --entrypoint cat eltorio/haproxy:2.9-${{ matrix.platform }} /haproxy.deb > haproxy-${{ matrix.platform }}.deb
 
     - name: Upload .deb file
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: haproxy-deb-${{ matrix.platform }}
         path: haproxy-${{ matrix.platform }}.deb
@@ -50,7 +57,7 @@ jobs:
     steps:
     - name: Get release
       id: get_release
-      uses: actions/github-script@v5
+      uses: actions/github-script@v7
       with:
         script: |
           const release = await github.rest.repos.getReleaseByTag({
@@ -61,7 +68,7 @@ jobs:
           return release.data.id;
 
     - name: Download .deb file
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: haproxy-deb-${{ matrix.platform }}
 
