@@ -1,0 +1,76 @@
+name: Build Haproxy 2.9 with Docker Buildx
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        platforms: ${{ matrix.platform }}
+        push: true
+        tags: eltorio/haproxy:2.9-${{ matrix.platform }}
+
+    - name: Extract .deb file
+      run: |
+        docker pull eltorio/haproxy:2.9-${{ matrix.platform }}
+        docker run --rm --entrypoint cat eltorio/haproxy:2.9-${{ matrix.platform }} /haproxy.deb > haproxy-${{ matrix.platform }}.deb
+
+    - name: Upload .deb file
+      uses: actions/upload-artifact@v2
+      with:
+        name: haproxy-deb-${{ matrix.platform }}
+        path: haproxy-${{ matrix.platform }}.deb
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+
+    steps:
+    - name: Get release
+      id: get_release
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const release = await github.rest.repos.getReleaseByTag({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag: context.ref.replace('refs/tags/', '')
+          });
+          return release.data.id;
+
+    - name: Download .deb file
+      uses: actions/download-artifact@v2
+      with:
+        name: haproxy-deb-${{ matrix.platform }}
+
+    - name: Publish .deb file
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: https://api.github.com/repos/${{ github.repository }}/releases/${{ steps.get_release.outputs.result }}
+        asset_path: ./haproxy-deb-${{ matrix.platform }}.deb
+        asset_name: haproxy-deb-${{ matrix.platform }}.deb
+        asset_content_type: application/octet-stream
