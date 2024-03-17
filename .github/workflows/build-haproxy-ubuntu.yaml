@@ -28,31 +28,35 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    - name: Prepare
+      id: prep
+      run: echo ::set-output name=tag::$(echo ${{ matrix.platform }} | tr '/' '-')
+
     - name: Build Docker image
       uses: docker/build-push-action@v3
       with:
         context: .
         platforms: ${{ matrix.platform }}
         push: true
-        tags: eltorio/haproxy:2.9-${{ matrix.platform }}
+        tags: eltorio/haproxy:2.9-:${{ steps.prep.outputs.tag }}
 
     - name: Extract .deb file
       run: |
         docker pull eltorio/haproxy:2.9-${{ matrix.platform }}
-        docker run --rm --entrypoint cat eltorio/haproxy:2.9-${{ matrix.platform }} /haproxy.deb > haproxy-${{ matrix.platform }}.deb
+        docker run --rm --entrypoint cat eltorio/haproxy:2.9-${{ steps.prep.outputs.tag }} /haproxy.deb > haproxy-${{ steps.prep.outputs.tag }}.deb
 
     - name: Upload .deb file
       uses: actions/upload-artifact@v4
       with:
-        name: haproxy-deb-${{ matrix.platform }}
-        path: haproxy-${{ matrix.platform }}.deb
+        name: haproxy-deb-${{ steps.prep.outputs.tag }}
+        path: haproxy-${{ steps.prep.outputs.tag }}.deb
 
   publish:
     needs: build
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: [linux/amd64, linux/arm64]
+        platform: [linux-amd64, linux-arm64]
 
     steps:
     - name: Get release
