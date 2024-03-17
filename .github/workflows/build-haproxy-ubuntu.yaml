@@ -78,12 +78,8 @@ jobs:
       with:
         name: haproxy-deb-${{ matrix.platform }}
 
-    - name: Publish .deb file
-      uses: actions/upload-release-asset@v1
+    - name: Upload Release Asset
+      run: |
+        gh release upload ${{ github.ref }} ./haproxy-deb-${{ matrix.platform }}.deb --repo ${{ github.repository }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: https://api.github.com/repos/${{ github.repository }}/releases/${{ steps.get_release.outputs.result }}
-        asset_path: ./haproxy-deb-${{ matrix.platform }}.deb
-        asset_name: haproxy-deb-${{ matrix.platform }}.deb
-        asset_content_type: application/octet-stream
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
