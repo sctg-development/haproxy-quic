@@ -38,7 +38,7 @@ jobs:
         context: .
         platforms: ${{ matrix.platform }}
         push: true
-        tags: eltorio/haproxy:2.9-:${{ steps.prep.outputs.tag }}
+        tags: eltorio/haproxy:2.9-${{ steps.prep.outputs.tag }}
 
     - name: Extract .deb file
       run: |
