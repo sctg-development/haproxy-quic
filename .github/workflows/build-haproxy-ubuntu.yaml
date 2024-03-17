@@ -33,16 +33,18 @@ jobs:
       run: echo ::set-output name=tag::$(echo ${{ matrix.platform }} | tr '/' '-')
 
     - name: Build Docker image
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v5
       with:
         context: .
         platforms: ${{ matrix.platform }}
         push: true
         tags: eltorio/haproxy:2.9-${{ steps.prep.outputs.tag }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Extract .deb file
       run: |
-        docker pull eltorio/haproxy:2.9-${{ matrix.platform }}
+        docker pull eltorio/haproxy:2.9-${{ steps.prep.outputs.tag }}
         docker run --rm --entrypoint cat eltorio/haproxy:2.9-${{ steps.prep.outputs.tag }} /haproxy.deb > haproxy-${{ steps.prep.outputs.tag }}.deb
 
     - name: Upload .deb file
